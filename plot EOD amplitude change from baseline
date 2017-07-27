@@ -1,0 +1,51 @@
+#graphing EOD plots
+
+#load required libraries
+library(ggplot2)
+library(reshape2)
+
+#load in data after downloading locally
+BnEOD<-read.csv("C:/Users/Savvas Constantinou/Downloads/Book1.csv", header=T, stringsAsFactors =F)
+
+#create new column and fill with averages of fish 1-4
+BnEOD$"Average1-4"<-rowMeans(BnEOD[, 2:5])
+
+#create new column and fill with averages of fish 5-7, 8, & 9
+BnEOD$"Average5,7-9"<-rowMeans(BnEOD[, c(6, 8:10)])
+
+#check
+head(BnEOD)
+
+#rearrange data by time (so each column gets repeated as a row with Time)
+BnEOD_melted=melt(BnEOD,id.vars='Time', variable.name = "Fish")
+
+#plot all at once
+# adding '[!is.na(BnEOD_melted$value),]' after the df causes geomline to skip N/A,
+#color by variable plots each fish (which is the variable)
+p <- ggplot(BnEOD_melted[!is.na(BnEOD_melted$value),], aes(x=Time,y=value,color=Fish))
+p + geom_line()
+
+#add column to group certain variables (fish) together
+BnEOD_melted = within(BnEOD_melted, {
+  is14 = ifelse(Fish%in%c('Fish1','Fish2','Fish3','Fish4','Average1-4'), 1, 0)
+})
+BnEOD_melted
+
+#plot data with lines. skip Na values. select groups via is14=="1/0"
+
+pp<-ggplot(  BnEOD_melted[!is.na(BnEOD_melted$value)&BnEOD_melted$is14==0,],
+              aes(x=Time,y=value,color=Fish))
+pp + geom_line(size=1.25) +
+  geom_point(size=2) +
+  ggtitle("Direct EO injection ") +
+  xlab("Time (minutes)") +
+  ylab("% EOD amplitude of baseline") 
+  
+pp2<-ggplot(  BnEOD_melted[!is.na(BnEOD_melted$value)&BnEOD_melted$is14==1,],
+              aes(x=Time,y=value,color=Fish))
+
+pp2 + geom_line(size=1.25) +
+  geom_point(size=2) +
+  ggtitle("Direct EO injection ") +
+  xlab("Time (minutes)") +
+  ylab("% EOD amplitude of baseline") 
